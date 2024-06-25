@@ -8,13 +8,44 @@ import (
 	"github.com/Masterminds/semver/v3"
 )
 
+const usage = `Usage: semver [options] <version>
+    -M, --major               Increment the major version.
+    -m, --minor               Increment the minor version.
+    -p, --patch               Increment the patch version.`
+
 func main() {
 
-	incMajor := flag.Bool("M", false, "Increment major version")
-	incMinor := flag.Bool("m", false, "Increment minor version")
-	incPatch := flag.Bool("p", false, "Increment patch version")
+	var incMajor, incMinor, incPatch bool
 
+	flag.BoolVar(&incMajor, "M", false, "Increment major version")
+	flag.BoolVar(&incMajor, "major", false, "Increment major version")
+	flag.BoolVar(&incMinor, "m", false, "Increment minor version")
+	flag.BoolVar(&incMinor, "minor", false, "Increment minor version")
+	flag.BoolVar(&incPatch, "p", false, "Increment patch version")
+	flag.BoolVar(&incPatch, "patch", false, "Increment patch version")
+
+	flag.Usage = func() {
+		fmt.Println(usage)
+	}
 	flag.Parse()
+
+	if flag.NArg() != 1 {
+		flag.Usage()
+		os.Exit(1)
+	}
+
+	if incMajor && incMinor || incMajor && incPatch || incMinor && incPatch {
+		flag.Usage()
+		fmt.Fprintf(os.Stderr, "Error: Only one of -M, -m, or -p can be specified\n")
+		os.Exit(1)
+	}
+
+	if !incMajor && !incMinor && !incPatch {
+		flag.Usage()
+		fmt.Fprintf(os.Stderr, "Error: One of -M, -m, or -p must be specified\n")
+		os.Exit(1)
+	}
+
 	version := flag.Args()[0]
 
 	v, err := semver.StrictNewVersion(version)
@@ -25,11 +56,11 @@ func main() {
 
 	currentVersion := *v
 
-	if *incMajor {
+	if incMajor {
 		currentVersion = currentVersion.IncMajor()
-	} else if *incMinor {
+	} else if incMinor {
 		currentVersion = currentVersion.IncMinor()
-	} else if *incPatch {
+	} else if incPatch {
 		currentVersion = currentVersion.IncPatch()
 	}
 	fmt.Println(currentVersion.String())
